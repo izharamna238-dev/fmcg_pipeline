@@ -21,7 +21,7 @@ jobs:
         uses: databricks/setup-cli@main
 
       - name: Trigger Databricks pipeline job
-        run: databricks jobs run-now --job-id 330888453390117
+        run: databricks jobs run-now 330888453390117 --no-wait
         env:
           DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
           DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
