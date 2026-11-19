@@ -1,0 +1,27 @@
+# Triggers the fmcg_pipeline Databricks job (job-id 330888453390117)
+# whenever code is pushed to main (or manually via workflow_dispatch).
+# Requires repository secrets:
+#   DATABRICKS_HOST  - your workspace URL, e.g. https://adb-1234567890.12.azuredatabricks.net
+#   DATABRICKS_TOKEN - a Databricks access token (service principal recommended)
+name: Run FMCG Pipeline
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  run-pipeline:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Databricks CLI
+        uses: databricks/setup-cli@main
+
+      - name: Trigger Databricks pipeline job
+        run: databricks jobs run-now --job-id 330888453390117
+        env:
+          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}

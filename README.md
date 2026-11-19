@@ -95,6 +95,15 @@ Re-running any notebook is safe: every load is idempotent via Delta `MERGE` on t
 - Unity Catalog (`fmcg` catalog with `bronze` / `silver` / `gold` schemas)
 - AWS S3 (raw data lake)
 
+## CI/CD — Auto-run on Push
+
+A GitHub Actions workflow (`.github/workflows/run-pipeline.yml`) triggers the Databricks job `fmcg_pipeline` on every push to `main` (and manually via *Run workflow*). The job runs the six pipeline notebooks in order on serverless compute: setup → date dimension → customers → products → pricing → full fact load.
+
+To enable it, add two repository secrets under **Settings → Secrets and variables → Actions**:
+
+- `DATABRICKS_HOST` — your Databricks workspace URL
+- `DATABRICKS_TOKEN` — a Databricks access token (service principal recommended)
+
 ## Author
 
 Built by [izharamna238-dev](https://github.com/izharamna238-dev) as an end-to-end FMCG retail data engineering showcase.
