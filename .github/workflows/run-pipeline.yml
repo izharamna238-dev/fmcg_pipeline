@@ -20,18 +20,20 @@ jobs:
       - name: Set up Databricks CLI
         uses: databricks/setup-cli@main
 
-      - name: Sanity-check Databricks configuration
+      - name: Probe A - host starts with https://
         env:
           DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+        run: python3 -c "import os,sys; sys.exit(0 if os.environ['DATABRICKS_HOST'].startswith('https://') else 1)"
+
+      - name: Probe B - host looks like a Databricks workspace URL
+        env:
+          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+        run: python3 -c "import os,sys; h=os.environ['DATABRICKS_HOST']; sys.exit(0 if (h.endswith('.azuredatabricks.net') or h.endswith('.databricks.com') or h.endswith('.gcp.databricks.com')) else 1)"
+
+      - name: Probe C - token has dapi prefix
+        env:
           DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
-        run: |
-          python3 - <<'EOF'
-          import os
-          h = os.environ.get("DATABRICKS_HOST", "")
-          t = os.environ.get("DATABRICKS_TOKEN", "")
-          print("host set:", bool(h), "| length:", len(h), "| starts with https://", h.startswith("https://"))
-          print("token set:", bool(t), "| length:", len(t), "| starts with dapi:", t.startswith("dapi"))
-          EOF
+        run: python3 -c "import os,sys; t=os.environ['DATABRICKS_TOKEN']; sys.exit(0 if t.startswith('dapi') else 1)"
 
       - name: Trigger Databricks pipeline job
         run: databricks jobs run-now 330888453390117 --no-wait --debug
