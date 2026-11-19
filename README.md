@@ -70,9 +70,31 @@ Run notebooks in folder order (`%run` the `utilities` notebook first — without
 | `fmcg.gold.sb_fact_orders` | 34,418 |
 | `fmcg.gold.fact_orders` | ~96,112 (monthly aggregates) |
 
+## How to Run
+
+1. **Prerequisites** — a Databricks workspace with Unity Catalog enabled, a compute cluster (DBR 13+ recommended), and access to the raw S3 bucket (`s3://amina-sportsdb`).
+2. **Setup** — run `1_setup/setup` to create the `fmcg` catalog and its `bronze` / `silver` / `gold` schemas, then run `1_setup/dim_date_table_creation` for the date dimension.
+3. **Dimensions** — run the three notebooks in `2_dimension_data/` in order (customers → products → pricing).
+4. **Facts** — run `fact_data_processing/full_load_fact` for the initial full order load; use `fact_data_processing/2_incremental_load_fact` for subsequent daily order extracts.
+5. **Shared config** — `1_setup/utilities` holds the schema variables used across notebooks; `%run` it (without the `/Workspace` prefix) before any processing notebook.
+
+Re-running any notebook is safe: every load is idempotent via Delta `MERGE` on the natural keys.
+
+## Data Quality Highlights
+
+- **Messy date handling** — order dates arrive in non-standard formats (e.g. `"Tuesday, September 30, 2025"`) and are parsed before typing.
+- **Invalid key remediation** — unknown / `INVALID` customer IDs are remapped to a sentinel key (`999999`) instead of being dropped.
+- **Deduplication** — duplicate orders are removed in Silver with `dropDuplicates` on the natural key.
+- **Referential integrity** — facts are inner-joined to the product dimension so only valid products reach Gold.
+- **Incremental safety** — daily appends to Bronze never duplicate downstream thanks to MERGE-based Silver/Gold loads.
+
 ## Tech Stack
 
 - Databricks Notebooks (PySpark)
 - Delta Lake (MERGE, Change Data Feed)
 - Unity Catalog (`fmcg` catalog with `bronze` / `silver` / `gold` schemas)
 - AWS S3 (raw data lake)
+
+## Author
+
+Built by [izharamna238-dev](https://github.com/izharamna238-dev) as an end-to-end FMCG retail data engineering showcase.
