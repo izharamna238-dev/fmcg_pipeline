@@ -20,23 +20,24 @@ jobs:
       - name: Set up Databricks CLI
         uses: databricks/setup-cli@main
 
-      - name: Probe A - host starts with https://
+      - name: Normalize Databricks host URL
         env:
-          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
-        run: python3 -c "import os,sys; sys.exit(0 if os.environ['DATABRICKS_HOST'].startswith('https://') else 1)"
+          RAW_HOST: ${{ secrets.DATABRICKS_HOST }}
+        run: |
+          H="$(echo "$RAW_HOST" | tr -d '[:space:]')"
+          case "$H" in
+            https://*) ;;
+            *) H="https://$H" ;;
+          esac
+          echo "DATABRICKS_HOST=$H" >> "$GITHUB_ENV"
 
-      - name: Probe B - host looks like a Databricks workspace URL
-        env:
-          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
-        run: python3 -c "import os,sys; h=os.environ['DATABRICKS_HOST']; sys.exit(0 if (h.endswith('.azuredatabricks.net') or h.endswith('.databricks.com') or h.endswith('.gcp.databricks.com')) else 1)"
-
-      - name: Probe C - token has dapi prefix
-        env:
-          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
-        run: python3 -c "import os,sys; t=os.environ['DATABRICKS_TOKEN']; sys.exit(0 if t.startswith('dapi') else 1)"
+      - name: Verify Databricks configuration
+        run: |
+          test -n "$DATABRICKS_HOST" || (echo "DATABRICKS_HOST secret is empty"; exit 1)
+          test -n "${{ secrets.DATABRICKS_TOKEN }}" || (echo "DATABRICKS_TOKEN secret is empty"; exit 1)
 
       - name: Trigger Databricks pipeline job
-        run: databricks jobs run-now 330888453390117 --no-wait --debug
+        run: databricks jobs run-now 330888453390117 --no-wait
         env:
-          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+          DATABRICKS_HOST: ${{ env.DATABRICKS_HOST }}
           DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
