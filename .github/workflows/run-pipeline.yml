@@ -31,20 +31,15 @@ jobs:
           esac
           echo "DATABRICKS_HOST=$H" >> "$GITHUB_ENV"
 
-      - name: Verify Databricks configuration
+      - name: Verify DATABRICKS_HOST is set
         env:
-          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
-          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
-        run: |
-          if [ -z "$DATABRICKS_HOST" ]; then
-            echo "ERROR: DATABRICKS_HOST secret is not set or empty."
-            exit 1
-          fi
-          if [ -z "$DATABRICKS_TOKEN" ]; then
-            echo "ERROR: DATABRICKS_TOKEN secret is not set or empty."
-            exit 2
-          fi
-          echo "Both secrets are configured."
+          CHECK_HOST: ${{ secrets.DATABRICKS_HOST }}
+        run: test -n "$CHECK_HOST" || (echo "DATABRICKS_HOST secret is NOT set or empty"; exit 1)
+
+      - name: Verify DATABRICKS_TOKEN is set
+        env:
+          CHECK_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+        run: test -n "$CHECK_TOKEN" || (echo "DATABRICKS_TOKEN secret is NOT set or empty"; exit 1)
 
       - name: Trigger Databricks pipeline job
         run: databricks jobs run-now 330888453390117 --no-wait
